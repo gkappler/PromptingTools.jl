@@ -619,6 +619,15 @@ function StructTypes.subtypes(::Type{AbstractMessage})
         annotationmessage = AnnotationMessage)
 end
 
+StructTypes.StructType(::Type{AbstractDataMessage}) = StructTypes.AbstractType()
+StructTypes.subtypekey(::Type{AbstractDataMessage}) = :_type
+function StructTypes.subtypes(::Type{AbstractDataMessage})
+    (toolmessage = ToolMessage,
+     aitoolrequest = AIToolRequest,
+     datamessage = DataMessage,
+     tracermessage = TracerMessage)
+end
+
 StructTypes.StructType(::Type{AbstractChatMessage}) = StructTypes.AbstractType()
 StructTypes.subtypekey(::Type{AbstractChatMessage}) = :_type
 function StructTypes.subtypes(::Type{AbstractChatMessage})
