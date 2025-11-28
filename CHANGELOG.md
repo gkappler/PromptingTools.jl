@@ -10,6 +10,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Updated
 
+## [0.88.0]
+
+### Added
+- Added support for OpenAI's Responses API (`/responses` endpoint) via `OpenAIResponseSchema`. Supports reasoning traces, multi-turn conversations with `previous_response_id`, and structured extraction with `aiextract`. Use `aigenerate(OpenAIResponseSchema(), prompt; model="o4-mini")` for reasoning models (access via `result.extras[:reasoning_content]`). See `examples/working_with_responses_api.jl`. Note: Many features are not supported yet, eg, built-in tools, etc.
+- Added support for streaming responses with `OpenAIResponseSchema` via a dedicated `StreamCallback` flavor. See `examples/working_with_responses_api.jl`.
+
+## [0.87.0]
+
+### Fixed
+- Fixed missing `api_key` fallback in `CustomOpenAISchema` for both `create_embeddings` and `create_chat` methods. Previously, these methods would fail with an empty API key error even when `OPENAI_API_KEY` was set.
+- Fixed flaky `select_best` test for `ThompsonSampling` to be more deterministic.
+
+## [0.86.0]
+
+### Added
+- Added support for Anthropic's Claude Opus 4.5 model (`claude-opus-4-5-20251101`, alias `claudeo`).
+
+## [0.85.0]
+
+### Added
+- Added support for OpenAI's GPT-5.1 family: `gpt-5.1` (alias `gpt51`), `gpt-5.1-2025-11-13`, `gpt-5.1-codex` (alias `gpt51c`), and `gpt-5.1-codex-mini` (alias `gpt51cm`) with 256K context and 128K output (Note: The codex models require `responses` endpoint, which is NOT yet supported by the package).
+- Added support for Google's Gemini 3 Pro Preview model (`gemini-3-pro-preview`, alias `gem3p`) with 1M context and 64K output.
+
 ## [0.84.0]
 
 ### Breaking Changes
