@@ -103,6 +103,7 @@ For more practical examples, see the `examples/` folder and the [Advanced Exampl
     - [Using MistralAI API and other OpenAI-compatible APIs](#using-mistralai-api-and-other-openai-compatible-apis)
     - [Using OpenAI Responses API](#using-openai-responses-api)
     - [Using Anthropic Models](#using-anthropic-models)
+    - [Companion Packages: Logfire.jl & TextPrompts.jl](#companion-packages-logfirejl--textpromptsjl)
     - [More Examples](#more-examples)
   - [Package Interface](#package-interface)
   - [Frequently Asked Questions](#frequently-asked-questions)
@@ -656,6 +657,121 @@ msg = aigenerate(
     model = "cladeo")
 ```
 
+
+### Companion Packages: Logfire.jl & TextPrompts.jl
+
+PromptingTools.jl integrates with two companion packages that provide observability and prompt management capabilities. Both packages are part of a **cross-language ecosystem** - the same tools and prompt files work with Python and TypeScript, enabling teams to share infrastructure across different codebases.
+
+#### Observability with Logfire.jl
+
+[Logfire.jl](https://github.com/svilupp/Logfire.jl) provides OpenTelemetry-based observability for your LLM applications. It automatically traces all your AI calls with detailed information about tokens, costs, messages, and latency.
+
+| Language | Package | Installation |
+|----------|---------|--------------|
+| Julia | [Logfire.jl](https://github.com/svilupp/Logfire.jl) | `Pkg.add("Logfire")` |
+| Python | [logfire](https://docs.pydantic.dev/logfire/) | `pip install logfire` |
+
+**Quick Setup:**
+
+```julia
+using Pkg
+Pkg.add(["Logfire", "DotEnv"])  # Install Logfire.jl to enable the extension
+
+using DotEnv
+DotEnv.load!()  # Load LOGFIRE_TOKEN and API keys from .env file
+
+using Logfire, PromptingTools
+
+# 1. Configure Logfire (uses LOGFIRE_TOKEN env var, or pass token directly)
+Logfire.configure(service_name = "my-app")
+
+# 2. Instrument all registered models - wraps them with tracing schema
+Logfire.instrument_promptingtools!()
+
+# 3. Use PromptingTools as normal - traces are automatic!
+aigenerate("What is 2 + 2?"; model = "gpt4om")
+```
+
+**What Gets Captured:**
+- Token usage (input/output/total) and cost estimates
+- Full conversation history (system, user, assistant messages)
+- Model parameters (temperature, max_tokens, etc.)
+- Latency measurements and cache/streaming flags
+- Tool/function calls and structured extraction results
+
+**Alternative Backends:**
+
+You don't have to use Logfire cloud - send traces to any OpenTelemetry-compatible backend (Jaeger, Langfuse, etc.). That said, I strongly recommend [Pydantic Logfire](https://pydantic.dev/logfire) - their free tier provides hundreds of thousands of traced conversations per month.
+
+See the [Logfire.jl documentation](https://svilupp.github.io/Logfire.jl/dev) and [`examples/observability_with_logfire.jl`](examples/observability_with_logfire.jl) for more details.
+
+#### Prompt Management with TextPrompts.jl
+
+[TextPrompts.jl](https://github.com/svilupp/textprompts/tree/main/packages/TextPrompts.jl) enables managing prompts as text files with optional TOML metadata. This approach allows version-controlled, collaborative prompt engineering separate from your code.
+
+| Language | Package | Installation |
+|----------|---------|--------------|
+| Julia | [TextPrompts.jl](https://github.com/svilupp/textprompts/tree/main/packages/TextPrompts.jl) | `Pkg.add("TextPrompts")` |
+| Python | [textprompts](https://github.com/svilupp/textprompts/tree/main/packages/textprompts) | `pip install textprompts` |
+| TypeScript | [@anthropic/textprompts](https://github.com/svilupp/textprompts/tree/main/packages/textprompts-ts) | `npm install @anthropic/textprompts` |
+
+**Quick Setup:**
+
+```julia
+using Pkg
+Pkg.add("TextPrompts")
+
+using TextPrompts, PromptingTools
+
+# Load prompt from file and format with placeholders
+prompt = load_prompt("prompts/system.txt")
+system_msg = prompt(; role = "Julia expert") |> SystemMessage
+
+# Use with PromptingTools
+response = aigenerate([system_msg, UserMessage("How do macros work?")]; model = "gpt4om")
+```
+
+**Prompt File Format:**
+
+```
+---
+title = "Expert System Prompt"
+version = "1.0"
+description = "A system prompt for expert assistance"
+---
+You are a {role}. Be helpful and accurate.
+```
+
+**Benefits:**
+- **Version control**: Track prompt changes in git with full history
+- **Validation**: Catch placeholder typos before LLM calls execute
+- **Metadata**: Track version, author, description per prompt
+- **Separation of concerns**: Keep prompt engineering separate from code
+- **Cross-language**: Same prompt files work in Python, TypeScript, and Julia
+
+See [`examples/working_with_textprompts.jl`](examples/working_with_textprompts.jl) for more details.
+
+#### Recommended Workflow
+
+Combine both packages for a complete LLM development workflow:
+
+1. **Store prompts** in version-controlled text files with TextPrompts.jl
+2. **Trace all calls** with Logfire.jl for full observability
+3. **Analyze performance** in the Logfire dashboard
+4. **Iterate and improve** prompts based on real-world data
+
+```julia
+using TextPrompts, PromptingTools, Logfire
+
+Logfire.configure(service_name = "my-app")
+Logfire.instrument_promptingtools!()
+
+# Load versioned prompts and trace the LLM call
+system = load_prompt("prompts/system.txt")(; role = "Expert") |> SystemMessage
+response = aigenerate([system, UserMessage("Analyze this data")]; model = "gpt4om")
+```
+
+See the [announcement post](https://discourse.julialang.org/t/announcing-logfire-jl-textprompts-jl-observability-and-prompt-management-for-julia-genai/134268) for more information.
 
 ### More Examples
 
